@@ -20,20 +20,20 @@
     // ensure dir exists
     [[NSFileManager defaultManager] createDirectoryAtPath:@"/var/mobile/Library/TLinkauto/run" withIntermediateDirectories:YES attributes:nil error:nil];
     [_conn start];
-    // Wait briefly, then broadcast HELLO to any connected clients
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [_conn sendMessageWithType:TLJS_MSG_HELLO requestId:0 runId:0 generation:0 timeout:5000 payload:@{}];
-    });
     [[NSRunLoop currentRunLoop] run];
 }
 
 - (void)connectionDidReceiveMessage:(TLinkautoJSIPCHeader)header payload:(NSDictionary *)payload {
     NSLog(@"tlinkauto-jsd: Received message type %d", header.messageType);
 
-    if (header.messageType == TLJS_MSG_START_RUN) {
+    if (header.messageType == TLJS_MSG_HELLO_ACK) {
+        NSLog(@"tlinkauto-jsd: Received HELLO_ACK");
+    } else if (header.messageType == TLJS_MSG_START_RUN) {
         NSString *scriptPath = payload[@"scriptPath"];
         NSString *bundlePath = payload[@"bundlePath"];
         NSDictionary *manifest = payload[@"manifest"];
+
+        [_conn sendMessageWithType:TLJS_MSG_START_RESULT requestId:0 runId:header.runId generation:header.generation timeout:5000 payload:@{@"ok": @YES}];
 
         _dispatcher = [[TLinkautoJSIPCTaskDispatcher alloc] initWithConnection:_conn runId:header.runId generation:header.generation];
 
@@ -54,6 +54,17 @@
     } else if (header.messageType == TLJS_MSG_TASK_RESPONSE) {
         [_dispatcher handleResponsePayload:payload forRequestId:header.requestId];
     }
+}
+
+- (void)connectionDidAcceptClient {
+    NSLog(@"tlinkauto-jsd: Client connected, sending HELLO");
+    NSDictionary *helloPayload = @{
+        @"protocolVersion": @(TLJS_VERSION),
+        @"daemonPid": @(getpid()),
+        @"capabilities": @[@"basic"],
+        @"maximumMessageSize": @(1024*1024*10)
+    };
+    [_conn sendMessageWithType:TLJS_MSG_HELLO requestId:0 runId:0 generation:0 timeout:5000 payload:helloPayload];
 }
 
 - (void)connectionDidDisconnect {

@@ -7,11 +7,13 @@
 @protocol TLinkautoJSIPCConnectionDelegate <NSObject>
 - (void)connectionDidReceiveMessage:(TLinkautoJSIPCHeader)header payload:(NSDictionary *)payload;
 - (void)connectionDidDisconnect;
+@optional
+- (void)connectionDidAcceptClient;
 @end
 
 @interface TLinkautoJSIPCConnection : NSObject
 
-@property (nonatomic, weak) id<TLinkautoJSIPCConnectionDelegate> delegate;
+@property (nonatomic, assign) id<TLinkautoJSIPCConnectionDelegate> delegate;
 
 - (instancetype)initWithSocketFile:(NSString *)socketPath isServer:(BOOL)isServer;
 - (void)start;
