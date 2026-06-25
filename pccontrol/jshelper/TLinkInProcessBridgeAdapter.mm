@@ -22,7 +22,7 @@
 #import "TLinkJSProtocol.h"
 
 #import <Foundation/Foundation.h>
-#include "Task.h"
+#include "pccontrol/Task.h"
 
 @implementation TLinkInProcessBridgeAdapter
 
